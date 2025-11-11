@@ -1,0 +1,43 @@
+# Ambientes virtuais
+venv/
+.env/
+
+# Cache do Python
+__pycache__/
+*.py[cod]
+
+# Arquivos temporários
+*.log
+*.tmp
+*.swp
+
+# Arquivos de testes e cobertura
+.coverage
+htmlcov/
+*.cover
+*.py,cover
+
+# Configurações de IDEs
+.vscode/
+.idea/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de pacotes
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Arquivos de banco de dados temporários
+*.sqlite3
+*.db
+
+# Arquivos de entrada/saída
+*.csv
+*.tsv
+*.xlsx
+*.json
