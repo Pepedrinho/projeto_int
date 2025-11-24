@@ -1,6 +1,6 @@
 import calendar
-import locale
-from datetime import datetime
+import locale, re
+from datetime import datetime, timedelta
 
 class Processo:
     def __init__(self):
@@ -22,89 +22,110 @@ class Processo:
         # Adiciona cor ao dia atual
         RED = '\033[91m'
         RESET = '\033[0m'
-
-        # Substitui o dia atual pela versão colorida
         self.cal_str_colorido = self.cal_str.replace(f'{self.dia:2}', f'{RED}{self.dia:2}{RESET}')
-    
-    def mostrar_calendario_com_destaque(self, data_str, cor='\033[95m'):
-        #Exibe o calendário do mês da data fornecida, com o dia destacado na cor escolhida.
-        #:param data_str: Data no formato 'DD/MM/AAAA'
-        #:param cor: Código ANSI da cor (padrão: roxo)
 
+    def mostrar_calendario_com_destaque(self, data_str, cor='\033[95m'):
+        """✨ Exibe o calendário do mês da data fornecida, com o dia destacado na cor escolhida."""
         try:
             data = datetime.strptime(data_str, "%d/%m/%Y")
-            ano = data.year
-            mes = data.month
-            dia = data.day
+            ano, mes, dia = data.year, data.month, data.day
 
-            # Gera calendário do mês
             cal = calendar.TextCalendar(calendar.SUNDAY)
             cal_str = cal.formatmonth(ano, mes)
 
-            # Aplica cor ao dia
             RESET = '\033[0m'
             cal_str_colorido = cal_str.replace(f'{dia:2}', f'{cor}{dia:2}{RESET}')
 
-            # Exibe resultado
-            print("\nData agendada:", data.strftime('%A, %d de %B de %Y'))
+            print("\n📌 Data agendada:", data.strftime('%A, %d de %B de %Y'))
             print(cal_str_colorido)
 
         except ValueError:
-            print("Formato inválido. Use DD/MM/AAAA.")
+            print("⚠️ Formato inválido. Use DD/MM/AAAA.")
+
+    def mostrar_calendario_manual(self, ano, mes, dias_destacados=None, cor="\033[92m"):
+        """Mostra calendário com dias destacados em cor."""
+        cal = calendar.TextCalendar(calendar.SUNDAY)
+        cal_str = cal.formatmonth(ano, mes)
+
+        if dias_destacados:
+            for d in dias_destacados:
+                padrao = rf"(?<!\d){d:2}(?!\d)"
+                destaque = f"{cor}{d:2}\033[0m"
+                cal_str = re.sub(padrao, destaque, cal_str)
+        return cal_str
 
     def login(self, username, password):
-        if username == "admin" and password == "admin123":
-            return True
-        else:
-           return False
-    
+        return username == "admin" and password == "admin123"
+
     def criar_objetivo(self):
-        print("Que tipo de objetivo você gostaria de criar?")
-        objetivo = input("Selecione o tipo de objetivo que deseja criar:\n1. Uma nova tarefa diária\n2. Uma nova tarefa semanal\n3. Uma nova tarefa mensal\n4. Uma nova tarefa com data programada\n")
-        urgencia = int(input("Qual o nível de urgência dessa tarefa? Adiável(0-4), Importante(5-7) ou Inádiavel(8-10)\n"))
+        print("🎯 Que tipo de objetivo você gostaria de criar?")
+        objetivo = input("Selecione:\n1️⃣ Tarefa diária\n2️⃣ Tarefa semanal\n3️⃣ Tarefa mensal\n👉 ")
+        urgencia = int(input("🔥 Qual o nível de urgência dessa tarefa?\n   0-4: Adiável\n   5-7: Importante\n   8-10: Inadiável\n👉 "))
 
-        if objetivo == "1" or objetivo == 'tarefa diária':
+        if objetivo == "1" or objetivo.lower() == 'tarefa diária':
             self.criar_tarefa_diaria(urgencia)
-        elif objetivo == "2" or objetivo == 'tarefa semanal':
+        elif objetivo == "2" or objetivo.lower() == 'tarefa semanal':
             self.criar_tarefa_semanal(urgencia)
-        elif objetivo == "3" or objetivo == 'tarefa mensal':
+        elif objetivo == "3" or objetivo.lower() == 'tarefa mensal':
             self.criar_tarefa_mensal(urgencia)
-        elif objetivo == "4" or objetivo == 'tarefa com data programada':
-            self.criar_tarefa_programada(urgencia)
-    
-    def criar_tarefa_diaria(self, urgencia):
-        tarefa = input("Que objetivo diário você gostaria de criar?")
-        print("--------------------------------")
-        print(self.cal_str_colorido) # Exibe o calendário com o dia atual destacado
-        print(f"Tarefa diária '{tarefa}' criada com urgência {urgencia}.")
-        if urgencia >= 4:
-            print("Te avisaremos um dia antes de seu prazo!")
-        elif urgencia >= 5 and urgencia <= 7:
-            print("Te avisaremos durante 3 dias antes de seu prazo!")
-        elif urgencia > 7:
-            print("Te avisaremos durante uma semana antes de seu prazo!")
-        print("--------------------------------")
 
+    def criar_tarefa_diaria(self, urgencia):
+        tarefa = input("📝 Que objetivo diário você gostaria de criar? ")
+        data_str = input("📅 Digite a data da tarefa (DD/MM/AAAA): ")
+
+        try:
+            data = datetime.strptime(data_str, "%d/%m/%Y")
+            cor = "\033[92m" if urgencia < 4 else "\033[93m" if urgencia <= 7 else "\033[91m"
+            print("═" * 40)
+            print(self.mostrar_calendario_manual(data.year, data.month, [data.day], cor))
+            print(f"✅ Tarefa diária '{tarefa}' criada com urgência {urgencia} para {data.strftime('%d/%m/%Y')}.")
+            print("═" * 40)
+        except ValueError:
+            print("⚠️ Data inválida. Use o formato DD/MM/AAAA.")
 
     def criar_tarefa_semanal(self, urgencia):
-        pass
+        tarefa = input("📝 Que objetivo semanal você gostaria de criar? ")
+        data_str = input("📅 Digite a data de início da semana (DD/MM/AAAA): ")
+
+        try:
+            data_inicio = datetime.strptime(data_str, "%d/%m/%Y")
+            ano, mes, dia = data_inicio.year, data_inicio.month, data_inicio.day
+            fim = data_inicio + timedelta(days=6)
+            dias_semana = [dia + i for i in range(7) if dia + i <= calendar.monthrange(ano, mes)[1]]
+
+            cor = "\033[92m" if urgencia < 4 else "\033[93m" if urgencia <= 7 else "\033[91m"
+            print("═" * 40)
+            print(self.mostrar_calendario_manual(ano, mes, dias_semana, cor))
+            print(f"✅ Tarefa semanal '{tarefa}' criada com urgência {urgencia} de {data_inicio.strftime('%d/%m/%Y')} até {fim.strftime('%d/%m/%Y')}.")
+            print("═" * 40)
+        except ValueError:
+            print("⚠️ Data inválida. Use o formato DD/MM/AAAA.")
 
     def criar_tarefa_mensal(self, urgencia):
-        pass
+        tarefa = input("📝 Que objetivo mensal você gostaria de criar? ")
+        mes = int(input("📅 Digite o mês da tarefa (1-12): "))
+        ano = int(input("📅 Digite o ano da tarefa (ex: 2025): "))
+
+        try:
+            _, ultimo_dia = calendar.monthrange(ano, mes)
+            dias_mes = list(range(1, ultimo_dia + 1))
+            cor = "\033[92m" if urgencia < 4 else "\033[93m" if urgencia <= 7 else "\033[91m"
+            print("═" * 40)
+            print(self.mostrar_calendario_manual(ano, mes, dias_mes, cor))
+            print(f"✅ Tarefa mensal '{tarefa}' criada com urgência {urgencia} para {calendar.month_name[mes]} de {ano}.")
+            print("═" * 40)
+        except:
+            print("⚠️ Mês ou ano inválido.")
 
     def criar_tarefa_programada(self, urgencia):
-        tarefa = input("Que objetivo diário você gostaria de criar?")
-        print("--------------------------------")
-        print(self.cal_str_colorido) # Exibe o calendário com o dia atual destacado
-        data = input("Para qual data você gostaria de agendar essa tarefa? (DD/MM/AAAA)\n")
-        if data:
-            # Exibe o calendário com o dia escolhido destacado
-            self.mostrar_calendario_com_destaque(data)
-            print(f"Tarefa diária '{tarefa}' criada com urgência {urgencia} para a data {data}.")
-            if urgencia >= 4:
-                print("Te avisaremos um dia antes de seu prazo!")
-            elif urgencia >= 5 and urgencia <= 7:
-                print("Te avisaremos durante 3 dias antes de seu prazo!")
-            elif urgencia > 7:
-                print("Te avisaremos durante uma semana antes de seu prazo!")
-            print("--------------------------------")
+        tarefa = input("📝 Que objetivo você gostaria de criar? ")
+        data_str = input("📅 Para qual data você gostaria de agendar essa tarefa? (DD/MM/AAAA): ")
+
+        try:
+            cor = "\033[92m" if urgencia < 4 else "\033[93m" if urgencia <= 7 else "\033[91m"
+            print("═" * 40)
+            self.mostrar_calendario_com_destaque(data_str, cor)
+            print(f"✅ Tarefa '{tarefa}' criada com urgência {urgencia} para {data_str}.")
+            print("═" * 40)
+        except ValueError:
+            print("⚠️ Data inválida. Use o formato DD/MM/AAAA.")
